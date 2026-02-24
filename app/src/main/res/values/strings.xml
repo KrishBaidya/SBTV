@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SBTV</string>
+    <string name="title_activity_main_tv">MainActivityTV</string>
+</resources>
