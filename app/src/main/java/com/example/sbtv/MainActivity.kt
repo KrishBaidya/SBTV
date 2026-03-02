@@ -2,8 +2,6 @@ package com.example.sbtv
 
 import android.app.UiModeManager
 import android.content.Context
-import android.content.Context.UI_MODE_SERVICE
-import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,11 +10,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.content.ContextCompat.getSystemService
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.sbtv.ui.theme.SBTVTheme
 
@@ -44,17 +43,35 @@ fun Context.isTv(): Boolean {
 }
 
 @Composable
-fun PhoneApp(modifier: Modifier = Modifier) {
-    Text("Helloo!!")
+fun PhoneApp(
+    modifier: Modifier = Modifier,
+    viewModel: MainViewModel = viewModel()
+) {
+    val navController = rememberNavController()
+    val hasProviders by viewModel.hasProviders.collectAsState(initial = null)
+
+    if (hasProviders != null) {
+        AppNavHost(
+            navController = navController,
+            startDestination = if (hasProviders == true) "home" else "add_playlist"
+        )
+    }
 }
 
 @Composable
-fun TVApp(modifier: Modifier = Modifier) {
+fun TVApp(
+    modifier: Modifier = Modifier,
+    viewModel: MainViewModel = viewModel()
+) {
     val navController = rememberNavController()
+    val hasProviders by viewModel.hasProviders.collectAsState(initial = null)
 
-    AppNavHost(
-        navController = navController
-    )
+    if (hasProviders != null) {
+        AppNavHost(
+            navController = navController,
+            startDestination = if (hasProviders == true) "tv_player" else "add_playlist"
+        )
+    }
 }
 
 @Preview(showBackground = true)
@@ -69,6 +86,4 @@ fun PhoneAppPreview() {
 @Composable
 fun TvAppPreview() {
     SBTVTheme {
-        TVApp()
-    }
-}
+    } }

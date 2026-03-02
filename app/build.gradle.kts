@@ -51,6 +51,10 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.ui.compose)
+    implementation(libs.androidx.media3.ui.compose.material3)
+    implementation(libs.androidx.media3.exoplayer.hls)
+    implementation(libs.androidx.media3.common)
 
     //Networking - OkHTTP
     implementation(libs.okhttp)
@@ -61,6 +65,12 @@ dependencies {
 
     //Navigation
     implementation(libs.navigation.compose)
+
+    //DataStore
+    implementation(libs.androidx.datastore.preferences)
+
+    //Gson - JSON
+    implementation(libs.gson)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
