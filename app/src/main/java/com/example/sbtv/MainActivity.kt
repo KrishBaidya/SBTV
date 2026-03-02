@@ -1,5 +1,10 @@
 package com.example.sbtv
 
+import android.app.UiModeManager
+import android.content.Context
+import android.content.Context.UI_MODE_SERVICE
+import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.navigation.compose.rememberNavController
 import com.example.sbtv.ui.theme.SBTVTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,28 +27,48 @@ class MainActivity : ComponentActivity() {
         setContent {
             SBTVTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    if (isTv()) {
+                        TVApp(modifier = Modifier.padding(innerPadding))
+                    } else {
+                        PhoneApp(modifier = Modifier.padding(innerPadding))
+                    }
                 }
             }
         }
     }
 }
 
+fun Context.isTv(): Boolean {
+    val uiModeManager = getSystemService(UiModeManager::class.java)
+    return uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
+}
+
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
+fun PhoneApp(modifier: Modifier = Modifier) {
+    Text("Helloo!!")
+}
+
+@Composable
+fun TVApp(modifier: Modifier = Modifier) {
+    val navController = rememberNavController()
+
+    AppNavHost(
+        navController = navController
     )
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun PhoneAppPreview() {
     SBTVTheme {
-        Greeting("Android")
+        PhoneApp()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TvAppPreview() {
+    SBTVTheme {
+        TVApp()
     }
 }
