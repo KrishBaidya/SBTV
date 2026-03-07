@@ -1,0 +1,197 @@
+export interface MediaItem {
+  id: string;
+  title: string;
+  description: string;
+  poster: string;
+  backdrop: string;
+  rating: number;
+  year: number;
+  genre: string;
+  duration?: string;
+}
+
+export const heroItems: MediaItem[] = [
+  {
+    id: 'hero-1',
+    title: 'Interstellar Horizon',
+    description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival against all odds.",
+    poster: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1920&fit=crop',
+    rating: 9.2,
+    year: 2024,
+    genre: 'Sci-Fi',
+    duration: '2h 49m',
+  },
+  {
+    id: 'hero-2',
+    title: 'The Silent Sea',
+    description: 'During a perilous 24-hour mission on the moon, space explorers retrieve samples from an abandoned research facility steeped in classified secrets.',
+    poster: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1920&fit=crop',
+    rating: 8.8,
+    year: 2023,
+    genre: 'Thriller',
+    duration: '1h 50m',
+  },
+  {
+    id: 'hero-3',
+    title: 'Cyber Chronicles',
+    description: 'In a future where technology governs all, a lone hacker discovers a deep-rooted conspiracy that threatens to rewrite reality itself.',
+    poster: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1535378437327-1e14798e2776?q=80&w=1920&fit=crop',
+    rating: 8.5,
+    year: 2025,
+    genre: 'Cyberpunk',
+    duration: '2h 15m',
+  },
+];
+
+export const trendingItems: MediaItem[] = [
+  {
+    id: 't-1',
+    title: 'Neon Nights',
+    description: 'A neo-noir thriller set in a rain-soaked city of tomorrow.',
+    poster: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920&fit=crop',
+    rating: 7.8,
+    year: 2023,
+    genre: 'Action',
+    duration: '1h 58m',
+  },
+  {
+    id: 't-2',
+    title: 'Desert Storm',
+    description: 'An epic adventure across uncharted desert lands where survival is the only mission.',
+    poster: 'https://images.unsplash.com/photo-1509347528160-9a9e33742cd4?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1509347528160-9a9e33742cd4?q=80&w=1920&fit=crop',
+    rating: 8.1,
+    year: 2022,
+    genre: 'Adventure',
+    duration: '2h 12m',
+  },
+  {
+    id: 't-3',
+    title: 'Urban Legend',
+    description: 'A chilling horror story rooted in myths that turn nightmarishly real.',
+    poster: 'https://images.unsplash.com/photo-1478720568477-152d9b164e63?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1478720568477-152d9b164e63?q=80&w=1920&fit=crop',
+    rating: 6.9,
+    year: 2024,
+    genre: 'Horror',
+    duration: '1h 42m',
+  },
+  {
+    id: 't-4',
+    title: "Ocean's Deep",
+    description: 'A breathtaking documentary journey to the most mysterious depths of our oceans.',
+    poster: 'https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?q=80&w=1920&fit=crop',
+    rating: 9.0,
+    year: 2021,
+    genre: 'Documentary',
+    duration: '1h 35m',
+  },
+  {
+    id: 't-5',
+    title: 'Mountain Peak',
+    description: 'An emotional drama about climbers who discover more than just a summit.',
+    poster: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1920&fit=crop',
+    rating: 8.5,
+    year: 2023,
+    genre: 'Drama',
+    duration: '2h 05m',
+  },
+  {
+    id: 't-6',
+    title: 'Speed Racer',
+    description: 'High-octane racing drama following an underdog champion on the edge of glory.',
+    poster: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=1920&fit=crop',
+    rating: 7.5,
+    year: 2024,
+    genre: 'Sports',
+    duration: '1h 55m',
+  },
+  {
+    id: 't-7',
+    title: 'The Heist',
+    description: 'A slick, stylish thriller about a master thief who plans the impossible job.',
+    poster: 'https://images.unsplash.com/photo-1596727147705-0608c643e34b?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1596727147705-0608c643e34b?q=80&w=1920&fit=crop',
+    rating: 8.3,
+    year: 2023,
+    genre: 'Thriller',
+    duration: '2h 20m',
+  },
+  {
+    id: 't-8',
+    title: 'City of Dreams',
+    description: 'A powerful drama exploring the lives of immigrants chasing the promise of a better future.',
+    poster: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=600&h=900&fit=crop',
+    backdrop: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=1920&fit=crop',
+    rating: 8.7,
+    year: 2022,
+    genre: 'Drama',
+    duration: '2h 08m',
+  },
+];
+
+export const channels = [
+  {
+    id: 'ch-1',
+    name: 'Sports Arena',
+    category: 'Sports',
+    logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=200&h=200&fit=crop',
+    currentProgram: 'Live: Champions League Final',
+    nextProgram: 'Post Match Analysis',
+  },
+  {
+    id: 'ch-2',
+    name: 'News 24',
+    category: 'News',
+    logo: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=200&h=200&fit=crop',
+    currentProgram: 'World News Tonight',
+    nextProgram: 'Business Report',
+  },
+  {
+    id: 'ch-3',
+    name: 'Movie Central',
+    category: 'Entertainment',
+    logo: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=200&h=200&fit=crop',
+    currentProgram: 'Inception',
+    nextProgram: 'The Dark Knight',
+  },
+  {
+    id: 'ch-4',
+    name: 'Kids Zone',
+    category: 'Kids',
+    logo: 'https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?q=80&w=200&h=200&fit=crop',
+    currentProgram: 'SpongeBob SquarePants',
+    nextProgram: 'Paw Patrol',
+  },
+  {
+    id: 'ch-5',
+    name: 'Nat Geo Wild',
+    category: 'Documentary',
+    logo: 'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?q=80&w=200&h=200&fit=crop',
+    currentProgram: 'Wild Africa',
+    nextProgram: 'Ocean Mysteries',
+  },
+  {
+    id: 'ch-6',
+    name: 'Music Hits',
+    category: 'Music',
+    logo: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=200&h=200&fit=crop',
+    currentProgram: 'Top 40 Countdown',
+    nextProgram: 'Late Night Mix',
+  },
+  {
+    id: 'ch-7',
+    name: 'Regional Plus',
+    category: 'Regional',
+    logo: 'https://images.unsplash.com/photo-1522869635100-1f4d061dd70d?q=80&w=200&h=200&fit=crop',
+    currentProgram: 'Evening Drama',
+    nextProgram: 'Cultural Showcase',
+  },
+];
