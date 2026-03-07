@@ -5,9 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.sbtv"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.sbtv"
@@ -21,7 +19,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -47,14 +46,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
-    //ExoPlayer
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
-    implementation(libs.androidx.media3.session)
-    implementation(libs.androidx.media3.ui.compose)
-    implementation(libs.androidx.media3.ui.compose.material3)
-    implementation(libs.androidx.media3.exoplayer.hls)
-    implementation(libs.androidx.media3.common)
 
     //Networking - OkHTTP
     implementation(libs.okhttp)
@@ -71,6 +62,12 @@ dependencies {
 
     //Gson - JSON
     implementation(libs.gson)
+
+    //Coil - Image Loading
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // VLC Player
+    implementation("org.videolan.android:libvlc-all:3.6.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

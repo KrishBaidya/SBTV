@@ -17,6 +17,7 @@ class ProviderDataStore(private val context: Context) {
     private val gson = Gson()
 
     private val PROVIDERS_KEY = stringPreferencesKey("providers")
+    private val ACTIVE_PROVIDER_ID_KEY = stringPreferencesKey("active_provider_id")
 
     suspend fun saveProviders(providers: List<IPTVProvider>) {
         val json = gson.toJson(providers)
@@ -31,6 +32,22 @@ class ProviderDataStore(private val context: Context) {
 
             val type = object : TypeToken<List<IPTVProvider>>() {}.type
             gson.fromJson(json, type)
+        }
+    }
+
+    suspend fun setActiveProviderId(id: String?) {
+        context.providerDataStore.edit {
+            if (id == null) {
+                it.remove(ACTIVE_PROVIDER_ID_KEY)
+            } else {
+                it[ACTIVE_PROVIDER_ID_KEY] = id
+            }
+        }
+    }
+
+    fun getActiveProviderId(): Flow<String?> {
+        return context.providerDataStore.data.map { prefs ->
+            prefs[ACTIVE_PROVIDER_ID_KEY]
         }
     }
 }
