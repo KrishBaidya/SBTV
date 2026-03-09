@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.sbtv.data.model.Channel
+import com.example.sbtv.ui.theme.GoldPrimary
+import com.example.sbtv.ui.theme.SurfaceDark
 
 @Composable
 fun ChannelItem(

@@ -19,9 +19,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.sbtv.data.local.ProviderViewModel
 import com.example.sbtv.data.model.IPTVProvider
 import com.example.sbtv.data.model.ProviderType
+import com.example.sbtv.ui.theme.GoldPrimary
+import com.example.sbtv.ui.theme.LoginGradientEnd
+import com.example.sbtv.ui.theme.LoginGradientStart
+import com.example.sbtv.ui.theme.SurfaceDarkAlpha
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +41,10 @@ fun AddPlaylistScreen(
     var baseUrl by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {

@@ -32,6 +32,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.videolan.libvlc.MediaPlayer
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 
@@ -39,8 +40,10 @@ import kotlinx.coroutines.delay
 fun TVPlayerScreen(
     navController: NavController,
     streamUrl: String? = null,
+    fromTV: Boolean = true,
     viewModel: TVViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val channels by viewModel.channels.collectAsState()
     var isOverlayVisible by remember { mutableStateOf(true) }
     
@@ -64,11 +67,43 @@ fun TVPlayerScreen(
         }
     }
 
+    // Track whether we've already started playback so we don't re-trigger
+    var hasStartedPlayback by remember { mutableStateOf(false) }
+    
+    // Auto-hide controls after 5 seconds
+    LaunchedEffect(controlInteractionTime) {
+        if (showControls) {
+            kotlinx.coroutines.delay(5000)
+            showControls = false
+        }
+    }
+    
+    // Update brightness when it changes
+    LaunchedEffect(brightness) {
+        val activity = context as? Activity
+        activity?.window?.attributes = activity?.window?.attributes?.apply {
+            screenBrightness = brightness
+        }
+    }
+    
+    // ─── THE CORE PLAYBACK TRIGGER ──────────────────────────────────────────
+    // Key on BOTH streamUrl AND channels so that:
+    //   1. If streamUrl is provided → play it immediately (single channel/movie)
+    //   2. If streamUrl is null → wait until channels are loaded, then auto-play
+    // hasStartedPlayback prevents re-triggering when channel list updates later
     LaunchedEffect(streamUrl, channels) {
-        if (streamUrl != null) {
-            viewModel.playerManager.play(streamUrl)
+        if (hasStartedPlayback) return@LaunchedEffect
+
+        if (!streamUrl.isNullOrBlank()) {
+            Log.d(TAG, "Playing direct URL: $streamUrl")
+            viewModel.playerManager.switchChannel(streamUrl)
+            hasStartedPlayback = true
         } else if (channels.isNotEmpty()) {
+            Log.d(TAG, "No URL provided — playing last or first channel (${channels.size} available)")
             viewModel.playLastOrDefault()
+            hasStartedPlayback = true
+        } else {
+            Log.d(TAG, "Waiting for channels to load...")
         }
     }
 
@@ -81,11 +116,16 @@ fun TVPlayerScreen(
     }
 
     BackHandler {
-        viewModel.stopPlayback()
-        if (streamUrl != null) {
-            navController.popBackStack()
+        if (fromTV) {
+            if (showChannelList) {
+                viewModel.stopPlayback()
+                navController.popBackStack()
+            } else {
+                showChannelList = true
+            }
         } else {
-            navController.navigate("channel_list")
+            viewModel.stopPlayback()
+            navController.popBackStack()
         }
     }
 
@@ -93,6 +133,45 @@ fun TVPlayerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                userInteractionTime = System.currentTimeMillis()
+            }
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                    // Show controls on any D-pad key press
+                    if (!showChannelList) {
+                        showControls = true
+                        controlInteractionTime = System.currentTimeMillis()
+                    }
+                    
+                    when (keyEvent.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                            if (showChannelList) {
+                                false // Let the list handle selection
+                            } else {
+                                viewModel.playerManager.togglePlayPause()
+                                true
+                            }
+                        }
+                        KeyEvent.KEYCODE_DPAD_UP -> {
+                            if (!showChannelList) {
+                                viewModel.playerManager.next()
+                                true
+                            } else false
+                        }
+                        KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            if (!showChannelList) {
+                                viewModel.playerManager.previous()
+                                true
+                            } else false
+                        }
+                        else -> false
+                    }
+                } else false
+            }
     ) {
         VideoPlayer(
             viewModel = viewModel,
@@ -126,3 +205,4 @@ fun TVPlayerScreen(
         }
     }
 }
+

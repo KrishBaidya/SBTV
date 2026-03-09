@@ -14,9 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.example.sbtv.ui.screens.AppLayout
 import com.example.sbtv.ui.theme.SBTVTheme
 
 class MainActivity : ComponentActivity() {
@@ -26,11 +26,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             SBTVTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    if (isTv()) {
-                        TVApp(modifier = Modifier.padding(innerPadding))
-                    } else {
-                        PhoneApp(modifier = Modifier.padding(innerPadding))
-                    }
+                    val isTv = isTv()
+                    MainAppRenderer(modifier = Modifier.padding(innerPadding), isTv = isTv)
                 }
             }
         }
@@ -43,47 +40,20 @@ fun Context.isTv(): Boolean {
 }
 
 @Composable
-fun PhoneApp(
+fun MainAppRenderer(
     modifier: Modifier = Modifier,
+    isTv: Boolean,
     viewModel: MainViewModel = viewModel()
 ) {
     val navController = rememberNavController()
     val hasProviders by viewModel.hasProviders.collectAsState(initial = null)
 
     if (hasProviders != null) {
-        AppNavHost(
-            navController = navController,
-            startDestination = if (hasProviders == true) "home" else "add_playlist"
-        )
+        AppLayout(navController = navController, isTv = isTv) {
+            AppNavHost(
+                navController = navController,
+                startDestination = if (hasProviders == true) "home" else "add_playlist"
+            )
+        }
     }
 }
-
-@Composable
-fun TVApp(
-    modifier: Modifier = Modifier,
-    viewModel: MainViewModel = viewModel()
-) {
-    val navController = rememberNavController()
-    val hasProviders by viewModel.hasProviders.collectAsState(initial = null)
-
-    if (hasProviders != null) {
-        AppNavHost(
-            navController = navController,
-            startDestination = if (hasProviders == true) "tv_player" else "add_playlist"
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PhoneAppPreview() {
-    SBTVTheme {
-        PhoneApp()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TvAppPreview() {
-    SBTVTheme {
-    } }

@@ -37,9 +37,8 @@ fun VideoPlayer(
                 controllerHideOnTouch = true
             }
         },
-        update = { playerView ->
-            playerView.player = viewModel.playerManager.player
-            playerView.useController = useController
+        update = { vlcLayout ->
+            vlcPlayer.videoScale = resizeMode
         },
         modifier = Modifier
             .fillMaxSize()
@@ -54,4 +53,15 @@ fun VideoPlayer(
                 false
             }
     )
+
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                vlcPlayer.detachViews()
+                Log.d(TAG, "VLC views detached")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to detach VLC views", e)
+            }
+        }
+    }
 }

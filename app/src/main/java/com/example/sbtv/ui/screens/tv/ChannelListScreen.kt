@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,8 +18,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.sbtv.ui.theme.GoldPrimary
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +34,22 @@ fun ChannelListScreen(
     BackHandler {
         navController.navigate("home")
     }
+    
+    var showCreateGroupDialog by remember { mutableStateOf(false) }
+    var newGroupName by remember { mutableStateOf("") }
+    
+    var showGroupOptionsDialog by remember { mutableStateOf<String?>(null) }
+    // Pair of (oldGroupName, categoryId) for the rename dialog
+    var showRenameGroupDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var renameGroupName by remember { mutableStateOf("") }
+    
+    var showChannelOptionsDialog by remember { mutableStateOf<Channel?>(null) }
+    
+    var showBulkManageDialog by remember { mutableStateOf<com.example.sbtv.data.model.CustomCategory?>(null) }
+    var bulkSearchQuery by remember { mutableStateOf("") }
+    
+    var selectedGroup by remember { mutableStateOf("All") }
+    var searchQuery by remember { mutableStateOf("") }
 
     val channels by viewModel.channels.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

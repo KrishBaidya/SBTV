@@ -12,12 +12,12 @@ import com.example.sbtv.ui.screens.tv.ChannelListScreen
 import com.example.sbtv.ui.screens.tv.HomeScreen
 import com.example.sbtv.ui.screens.tv.ManagePlaylistsScreen
 import com.example.sbtv.ui.screens.tv.MoviesScreen
+import com.example.sbtv.ui.screens.tv.SeriesPlayerScreen
 import com.example.sbtv.ui.screens.tv.SeriesScreen
 import com.example.sbtv.ui.screens.tv.SettingsScreen
 import com.example.sbtv.ui.screens.tv.TVPlayerScreen
 import com.example.sbtv.ui.screens.tv.TVViewModel
 import java.net.URLDecoder
-import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 @Composable
@@ -34,7 +34,7 @@ fun AppNavHost(
     ) {
 
         composable("home") {
-            HomeScreen(navController)
+            HomeScreen(navController, viewModel = tvViewModel)
         }
 
         composable("add_playlist") {
@@ -45,17 +45,28 @@ fun AppNavHost(
             ChannelListScreen(navController = navController, viewModel = tvViewModel)
         }
 
+        composable("manage_playlists") {
+            ManagePlaylistsScreen(navController = navController)
+        }
+
         composable(
-            route = "tv_player?url={url}",
-            arguments = listOf(navArgument("url") {
-                type = NavType.StringType
-                nullable = true
-                defaultValue = null
-            })
+            route = "tv_player?url={url}&fromTV={fromTV}",
+            arguments = listOf(
+                navArgument("url") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("fromTV") {
+                    type = NavType.BoolType
+                    defaultValue = true
+                }
+            )
         ) { backStackEntry ->
             val encodedUrl = backStackEntry.arguments?.getString("url")
-            val url = encodedUrl?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.toString()) }
-            TVPlayerScreen(navController = navController, streamUrl = url, viewModel = tvViewModel)
+            val url = encodedUrl?.ifBlank { null }?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.toString()) }
+            val fromTV = backStackEntry.arguments?.getBoolean("fromTV") ?: true
+            TVPlayerScreen(navController = navController, streamUrl = url, fromTV = fromTV, viewModel = tvViewModel)
         }
 
         composable("movies") {

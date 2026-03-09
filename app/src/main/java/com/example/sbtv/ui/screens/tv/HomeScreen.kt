@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,7 +25,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.example.sbtv.data.model.Channel
+import com.example.sbtv.data.model.Movie
+import com.example.sbtv.data.model.Series
+import com.example.sbtv.ui.theme.GoldPrimary
+import com.example.sbtv.ui.theme.SurfaceDark
 
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -110,6 +119,14 @@ fun HomeExpressiveCard(item: HomeItem, onClick: () -> Unit) {
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = title,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Gradient Box Overlay (Netflix style)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -132,6 +149,58 @@ fun HomeExpressiveCard(item: HomeItem, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.BottomStart)
             )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(text = title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "See All",
+                color = Color.Gray,
+                fontSize = 14.sp,
+                modifier = Modifier.clickable { navController.navigate(route) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(items) { item ->
+                Column(
+                    modifier = Modifier.clickable { navController.navigate(route) }
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .width(if (item.isPoster) 160.dp else 240.dp)
+                            .height(if (item.isPoster) 240.dp else 135.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1F2B))
+                    ) {
+                        if (item.image.isNotEmpty()) {
+                            AsyncImage(
+                                model = item.image,
+                                contentDescription = item.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Tv, contentDescription = null, tint = Color.DarkGray, modifier = Modifier.size(48.dp))
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = item.title,
+                        color = Color.LightGray,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        modifier = Modifier.width(if (item.isPoster) 160.dp else 240.dp)
+                    )
+                }
+            }
         }
     }
 }
