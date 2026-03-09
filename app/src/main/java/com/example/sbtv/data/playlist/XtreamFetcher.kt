@@ -1,5 +1,6 @@
 package com.example.sbtv.data.playlist
 
+import com.example.sbtv.data.model.XtreamCategory
 import com.example.sbtv.data.model.XtreamLiveStream
 import com.example.sbtv.data.model.XtreamVodStream
 import com.google.gson.Gson
@@ -11,6 +12,46 @@ class XtreamFetcher {
 
     private val client = OkHttpClient()
     private val gson = Gson()
+
+    fun fetchLiveCategories(baseUrl: String, username: String, password: String): List<XtreamCategory> {
+        val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
+        val url = "$safeBaseUrl/player_api.php?username=$username&password=$password&action=get_live_categories"
+
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return emptyList()
+                val json = response.body.string()
+                val type = object : TypeToken<List<XtreamCategory>>() {}.type
+                gson.fromJson(json, type) ?: emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    fun fetchVodCategories(baseUrl: String, username: String, password: String): List<XtreamCategory> {
+        val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
+        val url = "$safeBaseUrl/player_api.php?username=$username&password=$password&action=get_vod_categories"
+
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return emptyList()
+                val json = response.body.string()
+                val type = object : TypeToken<List<XtreamCategory>>() {}.type
+                gson.fromJson(json, type) ?: emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 
     fun fetchLiveStreams(baseUrl: String, username: String, password: String): List<XtreamLiveStream> {
         val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl

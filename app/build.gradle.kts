@@ -5,9 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.sbtv"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.sbtv"
@@ -71,6 +69,9 @@ dependencies {
 
     //Gson - JSON
     implementation(libs.gson)
+    
+    //Coil - Image Loading
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

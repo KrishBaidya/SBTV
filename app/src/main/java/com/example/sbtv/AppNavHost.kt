@@ -10,8 +10,10 @@ import androidx.navigation.navArgument
 import com.example.sbtv.ui.screens.tv.AddPlaylistScreen
 import com.example.sbtv.ui.screens.tv.ChannelListScreen
 import com.example.sbtv.ui.screens.tv.HomeScreen
+import com.example.sbtv.ui.screens.tv.ManagePlaylistsScreen
 import com.example.sbtv.ui.screens.tv.MoviesScreen
 import com.example.sbtv.ui.screens.tv.SeriesScreen
+import com.example.sbtv.ui.screens.tv.SettingsScreen
 import com.example.sbtv.ui.screens.tv.TVPlayerScreen
 import com.example.sbtv.ui.screens.tv.TVViewModel
 import java.net.URLDecoder
@@ -58,6 +60,7 @@ fun AppNavHost(
 
         composable("movies") {
             MoviesScreen(
+                navController = navController,
                 onMovieClick = { movie ->
                     val encodedUrl = URLEncoder.encode(movie.streamUrl, StandardCharsets.UTF_8.toString())
                     navController.navigate("tv_player?url=$encodedUrl")
@@ -66,7 +69,21 @@ fun AppNavHost(
         }
 
         composable("series") {
-            SeriesScreen()
+            SeriesScreen(
+                navController = navController,
+                onSeriesClick = { series ->
+                    val encodedUrl = URLEncoder.encode(series.streamUrl, StandardCharsets.UTF_8.toString())
+                    navController.navigate("tv_player?url=$encodedUrl")
+                }
+            )
+        }
+
+        composable("settings") {
+            SettingsScreen(navController = navController)
+        }
+        
+        composable("manage_playlists") {
+            ManagePlaylistsScreen(navController = navController)
         }
     }
 }
