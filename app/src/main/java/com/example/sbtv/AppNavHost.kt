@@ -12,6 +12,7 @@ import com.example.sbtv.ui.screens.tv.ChannelListScreen
 import com.example.sbtv.ui.screens.tv.HomeScreen
 import com.example.sbtv.ui.screens.tv.ManagePlaylistsScreen
 import com.example.sbtv.ui.screens.tv.MoviesScreen
+import com.example.sbtv.ui.screens.tv.SeriesPlayerScreen
 import com.example.sbtv.ui.screens.tv.SeriesScreen
 import com.example.sbtv.ui.screens.tv.SettingsScreen
 import com.example.sbtv.ui.screens.tv.TVPlayerScreen
@@ -78,6 +79,22 @@ fun AppNavHost(
 
         composable("settings") {
             SettingsScreen()
+        }
+
+        composable(
+            route = "series_player/{seriesGroupId}",
+            arguments = listOf(
+                navArgument("seriesGroupId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val seriesGroupId = backStackEntry.arguments?.getString("seriesGroupId") ?: ""
+            SeriesPlayerScreen(
+                navController = navController,
+                seriesGroupId = seriesGroupId,
+                viewModel = tvViewModel
+            )
         }
     }
 }

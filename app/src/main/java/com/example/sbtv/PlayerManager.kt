@@ -51,6 +51,9 @@ class PlayerManager(
     var currentUrl: String? = null
         private set
 
+    val isPlaying: Boolean
+        get() = vlcInitialized && vlcPlayer.isPlaying
+
     private val vlcEventListener = MediaPlayer.EventListener { event ->
         when (event.type) {
             MediaPlayer.Event.EncounteredError -> {
@@ -133,6 +136,32 @@ class PlayerManager(
             return switchVLC(currentUrl!!)
         }
         return false
+    }
+
+    fun pause() {
+        if (vlcInitialized && vlcPlayer.isPlaying) {
+            try {
+                vlcPlayer.pause()
+            } catch (e: Exception) {
+                Log.e(TAG, "VLC pause error", e)
+            }
+        }
+    }
+
+    fun resume() {
+        if (vlcInitialized && !vlcPlayer.isPlaying) {
+            try {
+                vlcPlayer.play()
+            } catch (e: Exception) {
+                Log.e(TAG, "VLC resume error", e)
+            }
+        }
+    }
+
+    fun togglePlayPause() {
+        if (vlcInitialized) {
+            if (vlcPlayer.isPlaying) pause() else resume()
+        }
     }
 
     fun stop() {

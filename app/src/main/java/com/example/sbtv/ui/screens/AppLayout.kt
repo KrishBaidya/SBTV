@@ -45,7 +45,7 @@ fun AppLayout(
     val currentRoute = navBackStackEntry?.destination?.route ?: ""
     
     // Do not show navigation bars on full screen routes like player or login
-    val isFullScreen = currentRoute.startsWith("tv_player") || currentRoute == "add_playlist"
+    val isFullScreen = currentRoute.startsWith("tv_player") || currentRoute.startsWith("series_player") || currentRoute == "add_playlist"
 
     if (isFullScreen) {
         content()

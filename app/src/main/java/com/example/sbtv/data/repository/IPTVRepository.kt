@@ -1,6 +1,7 @@
 package com.example.sbtv.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.example.sbtv.data.model.Channel
 import com.example.sbtv.data.model.Movie
 import com.example.sbtv.data.model.Series
@@ -83,16 +84,71 @@ class IPTVRepository(context: Context? = null) {
             val categoryMap = categories.associate { it.categoryId to it.categoryName }
 
             val seriesStreams = xtreamFetcher.fetchSeriesList(baseUrl, username, password)
-            val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
 
+            // Return one placeholder Series per show (metadata only, no playable URL)
+            // Actual episodes are fetched on-demand via loadXtreamSeriesEpisodes()
             seriesStreams.map { stream ->
+                val seriesId = stream.seriesId ?: stream.hashCode().toString()
                 Series(
-                    id = stream.seriesId ?: stream.hashCode().toString(),
+                    id = seriesId,
                     name = stream.name ?: "Unknown Series",
+                    streamUrl = "", // No playable URL at this stage
                     poster = stream.cover,
-                    category = categoryMap[stream.categoryId] ?: stream.categoryId
+                    category = categoryMap[stream.categoryId] ?: stream.categoryId,
+                    seriesName = stream.name ?: "Unknown Series"
                 )
             }
         }
     }
+
+    /**
+     * Fetch full episode list for a single Xtream series (on-demand).
+     * Calls get_series_info API to get episodes with playable stream URLs.
+     */
+    suspend fun loadXtreamSeriesEpisodes(
+        baseUrl: String, username: String, password: String, seriesId: String,
+        seriesName: String, poster: String?, category: String?
+    ): List<Series> {
+        return withContext(Dispatchers.IO) {
+            val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
+
+            try {
+                val seriesInfo = xtreamFetcher.fetchSeriesInfo(baseUrl, username, password, seriesId)
+                val episodesBySeason = seriesInfo?.episodes
+
+                if (!episodesBySeason.isNullOrEmpty()) {
+                    val episodes = mutableListOf<Series>()
+                    for ((seasonKey, seasonEpisodes) in episodesBySeason) {
+                        for (ep in seasonEpisodes) {
+                            val epId = ep.id ?: continue
+                            val extension = ep.containerExtension ?: "mp4"
+                            val seasonNum = ep.season ?: seasonKey.toIntOrNull() ?: 1
+                            val episodeNum = ep.episodeNum ?: 0
+
+                            episodes.add(
+                                Series(
+                                    id = "${seriesId}_${seasonNum}_${episodeNum}",
+                                    name = ep.title ?: "$seriesName S${seasonNum.toString().padStart(2, '0')}E${episodeNum.toString().padStart(2, '0')}",
+                                    streamUrl = "$safeBaseUrl/series/$username/$password/$epId.$extension",
+                                    poster = poster,
+                                    category = category,
+                                    seriesName = seriesName,
+                                    season = "S${seasonNum.toString().padStart(2, '0')}",
+                                    episodeNum = "E${episodeNum.toString().padStart(2, '0')}"
+                                )
+                            )
+                        }
+                    }
+                    episodes
+                } else {
+                    Log.w("IPTVRepository", "No episodes found for series: $seriesName ($seriesId)")
+                    emptyList()
+                }
+            } catch (e: Exception) {
+                Log.e("IPTVRepository", "Error fetching series info for $seriesName ($seriesId)", e)
+                emptyList()
+            }
+        }
+    }
 }
+

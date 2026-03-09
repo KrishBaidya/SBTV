@@ -27,45 +27,35 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.sbtv.data.model.Series
+import com.example.sbtv.data.model.SeriesGroup
 import com.example.sbtv.ui.theme.GoldPrimary
-import kotlinx.coroutines.launch
 
 @Composable
 fun SeriesScreen(
     navController: NavController,
     viewModel: TVViewModel = viewModel()
 ) {
-    val seriesList by viewModel.series.collectAsState()
+    val seriesGroups by viewModel.seriesGroups.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Build category list
-    val categories = remember(seriesList) {
-        listOf("All") + seriesList.mapNotNull { it.category }.distinct()
+    // Build category list from grouped series
+    val categories = remember(seriesGroups) {
+        listOf("All") + seriesGroups.mapNotNull { it.category }.distinct()
     }
     var selectedCategory by remember { mutableStateOf("All") }
     var searchQuery by remember { mutableStateOf("") }
 
-    val filtered = remember(seriesList, selectedCategory, searchQuery) {
-        seriesList
+    val filtered = remember(seriesGroups, selectedCategory, searchQuery) {
+        seriesGroups
             .filter { selectedCategory == "All" || it.category == selectedCategory }
             .filter { searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true) }
     }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    Scaffold(
-        containerColor = Color.Transparent,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Transparent)
             .padding(horizontal = 48.dp)
-            .padding(padding)
     ) {
         // Header
         Row(
@@ -77,7 +67,7 @@ fun SeriesScreen(
         ) {
             Column {
                 Text("Series", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text("${seriesList.size} Shows Available", color = GoldPrimary, fontSize = 14.sp)
+                Text("${seriesGroups.size} Shows Available", color = GoldPrimary, fontSize = 14.sp)
             }
             
             // Search Bar
@@ -133,7 +123,7 @@ fun SeriesScreen(
             }
         }
 
-        if (isLoading && seriesList.isEmpty()) {
+        if (isLoading && seriesGroups.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = GoldPrimary)
             }
@@ -149,24 +139,19 @@ fun SeriesScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
-                items(filtered, key = { it.id }) { series ->
-                    SeriesCard(series = series, onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "Series episodes coming soon!",
-                                duration = SnackbarDuration.Short
-                            )
-                        }
+                items(filtered, key = { it.id }) { group ->
+                    SeriesCard(seriesGroup = group, onClick = {
+                        viewModel.selectSeriesGroup(group)
+                        navController.navigate("series_player/${group.id}")
                     })
                 }
             }
         }
     }
-    } // end Scaffold
 }
 
 @Composable
-fun SeriesCard(series: Series, onClick: () -> Unit) {
+fun SeriesCard(seriesGroup: SeriesGroup, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -179,10 +164,10 @@ fun SeriesCard(series: Series, onClick: () -> Unit) {
                 .clip(RoundedCornerShape(8.dp))
                 .background(Color(0xFF1A1F2B))
         ) {
-            if (!series.poster.isNullOrBlank()) {
+            if (!seriesGroup.poster.isNullOrBlank()) {
                 AsyncImage(
-                    model = series.poster,
-                    contentDescription = series.name,
+                    model = seriesGroup.poster,
+                    contentDescription = seriesGroup.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -191,10 +176,29 @@ fun SeriesCard(series: Series, onClick: () -> Unit) {
                     Icon(Icons.Default.VideoLibrary, contentDescription = null, tint = Color.DarkGray, modifier = Modifier.size(48.dp))
                 }
             }
+            
+            // Episode count badge
+            if (seriesGroup.episodes.size > 1) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(GoldPrimary.copy(alpha = 0.9f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "${seriesGroup.episodes.size} EP",
+                        color = Color.Black,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = series.name,
+            text = seriesGroup.name,
             color = Color.LightGray,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,

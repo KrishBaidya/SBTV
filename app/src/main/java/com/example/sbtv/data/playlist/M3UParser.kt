@@ -62,12 +62,17 @@ class M3UParser {
 
                 when {
                     isSeries(currentGroup, url) -> {
+                        val parsed = parseSeriesInfo(currentTitle)
                         series.add(
                             Series(
                                 id = url.hashCode().toString(),
                                 name = currentTitle,
+                                streamUrl = url,
                                 poster = logo,
-                                category = group
+                                category = group,
+                                seriesName = parsed.seriesName,
+                                season = parsed.season,
+                                episodeNum = parsed.episodeNum
                             )
                         )
                     }
@@ -105,6 +110,61 @@ class M3UParser {
         Log.d("M3UParser", "Parse complete: ${channels.size} channels, ${movies.size} movies, ${series.size} series")
         return ParsedPlaylist(channels, movies, series)
     }
+
+    /**
+     * Extract series name, season, and episode from titles like:
+     * "Breaking Bad S01 E01", "The Office S02E05", "Narcos Season 3 Episode 10"
+     */
+    private fun parseSeriesInfo(title: String): SeriesParseResult {
+        // Pattern: S01E02, S01 E02, s1e2
+        val sXeX = Regex("""(.+?)\s*[Ss](\d+)\s*[Ee](\d+)""")
+        sXeX.find(title)?.let { match ->
+            return SeriesParseResult(
+                seriesName = match.groupValues[1].trim(),
+                season = "S${match.groupValues[2].padStart(2, '0')}",
+                episodeNum = "E${match.groupValues[3].padStart(2, '0')}"
+            )
+        }
+
+        // Pattern: Season 1 Episode 2
+        val seasonEp = Regex("""(.+?)\s*Season\s*(\d+)\s*Episode\s*(\d+)""", RegexOption.IGNORE_CASE)
+        seasonEp.find(title)?.let { match ->
+            return SeriesParseResult(
+                seriesName = match.groupValues[1].trim(),
+                season = "S${match.groupValues[2].padStart(2, '0')}",
+                episodeNum = "E${match.groupValues[3].padStart(2, '0')}"
+            )
+        }
+
+        // Pattern: S01 only (no episode) 
+        val sOnly = Regex("""(.+?)\s*[Ss](\d+)""")
+        sOnly.find(title)?.let { match ->
+            return SeriesParseResult(
+                seriesName = match.groupValues[1].trim(),
+                season = "S${match.groupValues[2].padStart(2, '0')}",
+                episodeNum = null
+            )
+        }
+
+        // Pattern: Episode N or Ep N or EP N
+        val epOnly = Regex("""(.+?)\s*(?:Episode|Ep|EP)\s*(\d+)""", RegexOption.IGNORE_CASE)
+        epOnly.find(title)?.let { match ->
+            return SeriesParseResult(
+                seriesName = match.groupValues[1].trim(),
+                season = "S01",
+                episodeNum = "E${match.groupValues[2].padStart(2, '0')}"
+            )
+        }
+
+        // Fallback: use entire title as series name
+        return SeriesParseResult(seriesName = title, season = "S01", episodeNum = null)
+    }
+
+    private data class SeriesParseResult(
+        val seriesName: String,
+        val season: String?,
+        val episodeNum: String?
+    )
 
     private fun isMovie(group: String, url: String): Boolean {
         val lowerGroup = group.lowercase()

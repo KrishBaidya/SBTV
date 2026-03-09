@@ -13,6 +13,7 @@ import com.example.sbtv.data.model.ProviderType
 import com.example.sbtv.data.repository.IPTVRepository
 import com.example.sbtv.data.model.Movie
 import com.example.sbtv.data.model.Series
+import com.example.sbtv.data.model.SeriesGroup
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -47,12 +48,27 @@ class TVViewModel(
 
     private val _series = MutableStateFlow<List<Series>>(emptyList())
     val series: StateFlow<List<Series>> = _series.asStateFlow()
+
+    private val _seriesGroups = MutableStateFlow<List<SeriesGroup>>(emptyList())
+    val seriesGroups: StateFlow<List<SeriesGroup>> = _seriesGroups.asStateFlow()
+
+    private val _selectedSeriesGroup = MutableStateFlow<SeriesGroup?>(null)
+    val selectedSeriesGroup: StateFlow<SeriesGroup?> = _selectedSeriesGroup.asStateFlow()
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
     
+    private val _isLoadingEpisodes = MutableStateFlow(false)
+    val isLoadingEpisodes: StateFlow<Boolean> = _isLoadingEpisodes.asStateFlow()
+    
     private val _activeGroup = MutableStateFlow<String?>(null)
     val activeGroup: StateFlow<String?> = _activeGroup.asStateFlow()
+    
+    // Store active provider credentials for on-demand series episode fetching
+    private var activeProviderBaseUrl: String = ""
+    private var activeProviderUsername: String = ""
+    private var activeProviderPassword: String = ""
+    private var activeProviderType: ProviderType = ProviderType.M3U
     
     val customCategories = customCategoryStore.getCategories()
 
@@ -121,9 +137,16 @@ class TVViewModel(
                                     _rawChannels.value = parsedPlaylist.channels
                                     _movies.value = parsedPlaylist.movies
                                     _series.value = parsedPlaylist.series
+                                    _seriesGroups.value = groupSeries(parsedPlaylist.series)
                                 }
                             }
                             ProviderType.XTREAM -> {
+                                // Store credentials for on-demand series episode fetching
+                                activeProviderBaseUrl = provider.baseUrl
+                                activeProviderUsername = provider.username ?: ""
+                                activeProviderPassword = provider.password ?: ""
+                                activeProviderType = ProviderType.XTREAM
+                                
                                 val channels = repository.loadXtreamChannels(
                                     baseUrl = provider.baseUrl,
                                     username = provider.username ?: "",
@@ -144,6 +167,7 @@ class TVViewModel(
                                     password = provider.password ?: ""
                                 )
                                 _series.value = seriesList
+                                _seriesGroups.value = groupXtreamSeries(seriesList)
                             }
                         }
                     } catch (e: Exception) {
@@ -212,6 +236,115 @@ class TVViewModel(
 
     fun stopPlayback() {
         playerManager.stop()
+    }
+
+    // ── Series Playback ─────────────────────────────────────────────────────
+
+    fun selectSeriesGroup(group: SeriesGroup) {
+        _selectedSeriesGroup.value = group
+    }
+
+    /**
+     * Load episodes on-demand for an Xtream series group.
+     * Called when user enters the series player screen.
+     */
+    fun loadSeriesEpisodes(group: SeriesGroup) {
+        if (group.episodesLoaded) return // Already loaded
+        if (group.xtreamSeriesId == null) return // Not an Xtream series (M3U already has episodes)
+        
+        viewModelScope.launch {
+            _isLoadingEpisodes.value = true
+            try {
+                val episodes = repository.loadXtreamSeriesEpisodes(
+                    baseUrl = activeProviderBaseUrl,
+                    username = activeProviderUsername,
+                    password = activeProviderPassword,
+                    seriesId = group.xtreamSeriesId,
+                    seriesName = group.name,
+                    poster = group.poster,
+                    category = group.category
+                )
+                
+                Log.d(TAG, "loadSeriesEpisodes: '${group.name}' loaded ${episodes.size} episodes")
+                
+                // Update the group with loaded episodes
+                val updatedGroup = group.copy(
+                    episodes = episodes.sortedWith(
+                        compareBy<Series> { it.season ?: "" }
+                            .thenBy { it.episodeNum ?: "" }
+                            .thenBy { it.name }
+                    ),
+                    episodesLoaded = true
+                )
+                
+                // Replace the group in the list
+                _seriesGroups.value = _seriesGroups.value.map {
+                    if (it.id == group.id) updatedGroup else it
+                }
+                _selectedSeriesGroup.value = updatedGroup
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading episodes for '${group.name}'", e)
+            } finally {
+                _isLoadingEpisodes.value = false
+            }
+        }
+    }
+
+    fun playSeriesEpisode(episode: Series, allEpisodes: List<Series>) {
+        viewModelScope.launch {
+            // Only include episodes with valid, non-blank stream URLs
+            val validEpisodes = allEpisodes.filter { it.streamUrl.isNotBlank() }
+            if (validEpisodes.isEmpty()) {
+                Log.w(TAG, "playSeriesEpisode: No valid episodes to play")
+                return@launch
+            }
+            val urls = validEpisodes.map { it.streamUrl }
+            val startIndex = urls.indexOf(episode.streamUrl).coerceAtLeast(0)
+            Log.d(TAG, "playSeriesEpisode: '${episode.name}' index=$startIndex/${urls.size}")
+            playerManager.playList(urls, startIndex)
+        }
+    }
+
+    /**
+     * Group M3U series (which already have playable URLs in each episode).
+     */
+    private fun groupSeries(seriesList: List<Series>): List<SeriesGroup> {
+        val validSeries = seriesList.filter { it.streamUrl.isNotBlank() }
+        return validSeries.groupBy { 
+            it.seriesName.ifBlank { it.name }
+        }.map { (groupName, episodes) ->
+            val first = episodes.first()
+            SeriesGroup(
+                id = groupName.hashCode().toString(),
+                name = groupName,
+                poster = first.poster,
+                category = first.category,
+                episodes = episodes.sortedWith(
+                    compareBy<Series> { it.season ?: "" }
+                        .thenBy { it.episodeNum ?: "" }
+                        .thenBy { it.name }
+                ),
+                episodesLoaded = true // M3U episodes are already loaded
+            )
+        }.sortedBy { it.name }
+    }
+
+    /**
+     * Group Xtream series metadata into SeriesGroups (no episodes yet - loaded on-demand).
+     * Each entry is one show with xtreamSeriesId for later fetching.
+     */
+    private fun groupXtreamSeries(seriesList: List<Series>): List<SeriesGroup> {
+        return seriesList.map { series ->
+            SeriesGroup(
+                id = series.id,
+                name = series.seriesName.ifBlank { series.name },
+                poster = series.poster,
+                category = series.category,
+                episodes = emptyList(), // Loaded on-demand
+                xtreamSeriesId = series.id,
+                episodesLoaded = false
+            )
+        }.sortedBy { it.name }
     }
 
     override fun onCleared() {

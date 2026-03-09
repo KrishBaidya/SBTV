@@ -3,6 +3,7 @@ package com.example.sbtv.data.playlist
 import android.util.Log
 import com.example.sbtv.data.model.XtreamLiveStream
 import com.example.sbtv.data.model.XtreamSeries
+import com.example.sbtv.data.model.XtreamSeriesInfo
 import com.example.sbtv.data.model.XtreamVodStream
 import com.example.sbtv.data.model.XtreamCategory
 import com.google.gson.Gson
@@ -89,6 +90,29 @@ class XtreamFetcher {
                 Log.e("XtreamFetcher", "Error parsing series list", e)
                 emptyList()
             }
+        }
+    }
+
+    /**
+     * Fetch full series info including all episodes grouped by season.
+     * Calls: get_series_info&series_id=X
+     */
+    fun fetchSeriesInfo(baseUrl: String, username: String, password: String, seriesId: String): XtreamSeriesInfo? {
+        val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
+        val url = "$safeBaseUrl/player_api.php?username=$username&password=$password&action=get_series_info&series_id=$seriesId"
+        val request = Request.Builder().url(url).build()
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    Log.e("XtreamFetcher", "Failed to load series info for $seriesId: ${response.code}")
+                    return null
+                }
+                val json = response.body.string()
+                gson.fromJson(json, XtreamSeriesInfo::class.java)
+            }
+        } catch (e: Exception) {
+            Log.e("XtreamFetcher", "Error fetching series info for $seriesId", e)
+            null
         }
     }
 

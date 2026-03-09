@@ -4,15 +4,14 @@ import android.app.Activity
 import android.content.Context
 import android.media.AudioManager
 import android.util.Log
+import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,11 +32,12 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -65,11 +65,13 @@ fun TVPlayerScreen(
     
     var showChannelList by remember { mutableStateOf(false) }
     var isControllerVisible by remember { mutableStateOf(false) }
+    var showControls by remember { mutableStateOf(false) }
     
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     
     var userInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
+    var controlInteractionTime by remember { mutableStateOf(0L) }
     var volume by remember { mutableStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) / maxVolume) } 
     var brightness by remember { mutableStateOf(
         (context as? Activity)?.window?.attributes?.screenBrightness?.takeIf { it >= 0 } ?: 0.5f
@@ -78,6 +80,14 @@ fun TVPlayerScreen(
 
     // Track whether we've already started playback so we don't re-trigger
     var hasStartedPlayback by remember { mutableStateOf(false) }
+    
+    // Auto-hide controls after 5 seconds
+    LaunchedEffect(controlInteractionTime) {
+        if (showControls) {
+            kotlinx.coroutines.delay(5000)
+            showControls = false
+        }
+    }
     
     // Update brightness when it changes
     LaunchedEffect(brightness) {
@@ -132,6 +142,39 @@ fun TVPlayerScreen(
                 indication = null
             ) {
                 userInteractionTime = System.currentTimeMillis()
+            }
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                    // Show controls on any D-pad key press
+                    if (!showChannelList) {
+                        showControls = true
+                        controlInteractionTime = System.currentTimeMillis()
+                    }
+                    
+                    when (keyEvent.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                            if (showChannelList) {
+                                false // Let the list handle selection
+                            } else {
+                                viewModel.playerManager.togglePlayPause()
+                                true
+                            }
+                        }
+                        KeyEvent.KEYCODE_DPAD_UP -> {
+                            if (!showChannelList) {
+                                viewModel.playerManager.next()
+                                true
+                            } else false
+                        }
+                        KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            if (!showChannelList) {
+                                viewModel.playerManager.previous()
+                                true
+                            } else false
+                        }
+                        else -> false
+                    }
+                } else false
             }
     ) {
         // Video Player Container
@@ -293,9 +336,9 @@ fun TVPlayerScreen(
             }
         }
 
-        // Quick Controls (Right side buttons)
+        // Quick Controls (Right side buttons) — auto-hide with showControls
         AnimatedVisibility(
-            visible = isControllerVisible && !showChannelList,
+            visible = showControls && !showChannelList,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.CenterEnd).padding(end = 32.dp)
@@ -312,22 +355,25 @@ fun TVPlayerScreen(
                             MediaPlayer.ScaleType.SURFACE_FILL 
                         else 
                             MediaPlayer.ScaleType.SURFACE_BEST_FIT
+                        controlInteractionTime = System.currentTimeMillis()
                     }
                 )
                 
                 ControlIconButton(icon = Icons.AutoMirrored.Filled.VolumeUp, label = "Vol", onClick = { 
                     volume = (volume + 0.1f).let { if (it > 1f) 0f else it }
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (volume * maxVolume).toInt(), AudioManager.FLAG_SHOW_UI)
+                    controlInteractionTime = System.currentTimeMillis()
                 })
                 ControlIconButton(icon = Icons.Default.Brightness6, label = "Bright", onClick = { 
                     brightness = (brightness + 0.1f).let { if (it > 1f) 0.1f else it }
+                    controlInteractionTime = System.currentTimeMillis()
                 })
             }
         }
 
-        // Top Right/Left Quick Controls (Next / Prev)
+        // Top Quick Controls (Next / Prev) — auto-hide with showControls
         AnimatedVisibility(
-            visible = isControllerVisible && !showChannelList,
+            visible = showControls && !showChannelList,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.TopStart).padding(32.dp)
@@ -336,11 +382,12 @@ fun TVPlayerScreen(
                 if (viewModel.playerManager.hasPrevious()) {
                     viewModel.playerManager.previous()
                 }
+                controlInteractionTime = System.currentTimeMillis()
             })
         }
         
         AnimatedVisibility(
-            visible = isControllerVisible && !showChannelList,
+            visible = showControls && !showChannelList,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.TopEnd).padding(32.dp)
@@ -349,11 +396,12 @@ fun TVPlayerScreen(
                 if (viewModel.playerManager.hasNext()) {
                     viewModel.playerManager.next()
                 }
+                controlInteractionTime = System.currentTimeMillis()
             })
         }
 
-        // Feedback Text
-        if (!showChannelList && fromTV && isControllerVisible) {
+        // Feedback Text — auto-hide with showControls
+        if (!showChannelList && fromTV && showControls) {
             Text(
                 text = "Press BACK for Channel List",
                 color = Color.White.copy(alpha = 0.5f),
@@ -368,26 +416,58 @@ fun TVPlayerScreen(
 
 @Composable
 fun ControlIconButton(icon: ImageVector, label: String, onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsFocusedAsState()
+    var isFocused by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.15f else 1f,
+        animationSpec = tween(200)
+    )
+    val bgAlpha by animateFloatAsState(
+        targetValue = if (isFocused) 0.35f else 0.2f,
+        animationSpec = tween(200)
+    )
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .graphicsLayer(scaleX = scale, scaleY = scale)
+            .focusable(true)
+            .onFocusChanged { isFocused = it.isFocused }
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN &&
+                    (keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                     keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_ENTER)
+                ) {
+                    onClick()
+                    true
+                } else false
+            }
+            .clickable { onClick() }
+    ) {
         Surface(
-            modifier = Modifier
-                .size(48.dp)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = androidx.compose.material3.ripple(color = GoldPrimary)
-                ) { onClick() },
+            modifier = Modifier.size(52.dp),
             shape = CircleShape,
-            color = if (isFocused) GoldPrimary.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.3f),
-            border = androidx.compose.foundation.BorderStroke(if (isFocused) 2.dp else 1.dp, if (isFocused) GoldPrimary else Color.White.copy(alpha = 0.2f))
+            color = if (isFocused) GoldPrimary.copy(alpha = bgAlpha) else Color.Black.copy(alpha = bgAlpha),
+            border = androidx.compose.foundation.BorderStroke(
+                if (isFocused) 2.5.dp else 1.dp,
+                if (isFocused) GoldPrimary else Color.White.copy(alpha = 0.2f)
+            )
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = label, tint = if (isFocused) Color.White else GoldPrimary, modifier = Modifier.size(24.dp))
+                Icon(
+                    icon,
+                    contentDescription = label,
+                    tint = if (isFocused) Color.White else GoldPrimary,
+                    modifier = Modifier.size(26.dp)
+                )
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(label, color = if (isFocused) GoldPrimary else Color.White, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+        Text(
+            label,
+            color = if (isFocused) GoldPrimary else Color.White,
+            fontSize = 10.sp,
+            fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Medium
+        )
     }
 }
+
