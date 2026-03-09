@@ -70,31 +70,31 @@ fun AppNavHost(
         }
 
         composable("movies") {
-            MoviesScreen(navController = navController, viewModel = tvViewModel)
+            MoviesScreen(
+                navController = navController,
+                onMovieClick = { movie ->
+                    val encodedUrl = URLEncoder.encode(movie.streamUrl, StandardCharsets.UTF_8.toString())
+                    navController.navigate("tv_player?url=$encodedUrl")
+                }
+            )
         }
 
         composable("series") {
-            SeriesScreen(navController = navController, viewModel = tvViewModel)
+            SeriesScreen(
+                navController = navController,
+                onSeriesClick = { series ->
+                    val encodedUrl = URLEncoder.encode(series.streamUrl, StandardCharsets.UTF_8.toString())
+                    navController.navigate("tv_player?url=$encodedUrl")
+                }
+            )
         }
 
         composable("settings") {
-            SettingsScreen()
+            SettingsScreen(navController = navController)
         }
-
-        composable(
-            route = "series_player/{seriesGroupId}",
-            arguments = listOf(
-                navArgument("seriesGroupId") {
-                    type = NavType.StringType
-                }
-            )
-        ) { backStackEntry ->
-            val seriesGroupId = backStackEntry.arguments?.getString("seriesGroupId") ?: ""
-            SeriesPlayerScreen(
-                navController = navController,
-                seriesGroupId = seriesGroupId,
-                viewModel = tvViewModel
-            )
+        
+        composable("manage_playlists") {
+            ManagePlaylistsScreen(navController = navController)
         }
     }
 }

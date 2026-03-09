@@ -62,6 +62,9 @@ dependencies {
 
     //Gson - JSON
     implementation(libs.gson)
+    
+    //Coil - Image Loading
+    implementation(libs.coil.compose)
 
     //Coil - Image Loading
     implementation("io.coil-kt:coil-compose:2.6.0")

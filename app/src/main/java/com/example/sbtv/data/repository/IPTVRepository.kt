@@ -43,15 +43,21 @@ class IPTVRepository(context: Context? = null) {
             val categoryMap = categories.associate { it.categoryId to it.categoryName }
 
             val liveStreams = xtreamFetcher.fetchLiveStreams(baseUrl, username, password)
+            val categories = xtreamFetcher.fetchLiveCategories(baseUrl, username, password)
+            
+            val categoryMap = categories.associateBy({ it.categoryId }, { it.categoryName })
+            
             val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
 
             liveStreams.map { stream ->
+                val groupName = categoryMap[stream.categoryId] ?: stream.categoryId ?: "Uncategorized"
+                
                 Channel(
                     id = stream.streamId?.toString() ?: stream.hashCode().toString(),
                     name = stream.name ?: "Unknown Channel",
                     streamUrl = "$safeBaseUrl/$username/$password/${stream.streamId}",
                     logo = stream.streamIcon,
-                    group = categoryMap[stream.categoryId] ?: stream.categoryId
+                    group = groupName
                 )
             }
         }
@@ -63,39 +69,22 @@ class IPTVRepository(context: Context? = null) {
             val categoryMap = categories.associate { it.categoryId to it.categoryName }
 
             val vodStreams = xtreamFetcher.fetchVodStreams(baseUrl, username, password)
+            val categories = xtreamFetcher.fetchVodCategories(baseUrl, username, password)
+            
+            val categoryMap = categories.associateBy({ it.categoryId }, { it.categoryName })
+            
             val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
 
             vodStreams.map { stream ->
                 val extension = stream.containerExtension ?: "mp4"
+                val groupName = categoryMap[stream.categoryId] ?: stream.categoryId ?: "Uncategorized"
+                
                 Movie(
                     id = stream.streamId?.toString() ?: stream.hashCode().toString(),
                     name = stream.name ?: "Unknown Movie",
                     streamUrl = "$safeBaseUrl/movie/$username/$password/${stream.streamId}.$extension",
                     poster = stream.streamIcon,
-                    category = categoryMap[stream.categoryId] ?: stream.categoryId
-                )
-            }
-        }
-    }
-
-    suspend fun loadXtreamSeries(baseUrl: String, username: String, password: String): List<Series> {
-        return withContext(Dispatchers.IO) {
-            val categories = xtreamFetcher.fetchSeriesCategories(baseUrl, username, password)
-            val categoryMap = categories.associate { it.categoryId to it.categoryName }
-
-            val seriesStreams = xtreamFetcher.fetchSeriesList(baseUrl, username, password)
-
-            // Return one placeholder Series per show (metadata only, no playable URL)
-            // Actual episodes are fetched on-demand via loadXtreamSeriesEpisodes()
-            seriesStreams.map { stream ->
-                val seriesId = stream.seriesId ?: stream.hashCode().toString()
-                Series(
-                    id = seriesId,
-                    name = stream.name ?: "Unknown Series",
-                    streamUrl = "", // No playable URL at this stage
-                    poster = stream.cover,
-                    category = categoryMap[stream.categoryId] ?: stream.categoryId,
-                    seriesName = stream.name ?: "Unknown Series"
+                    category = groupName
                 )
             }
         }

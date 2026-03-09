@@ -1,6 +1,6 @@
 package com.example.sbtv.data.playlist
 
-import android.util.Log
+import com.example.sbtv.data.model.XtreamCategory
 import com.example.sbtv.data.model.XtreamLiveStream
 import com.example.sbtv.data.model.XtreamSeries
 import com.example.sbtv.data.model.XtreamSeriesInfo
@@ -20,25 +20,43 @@ class XtreamFetcher {
         .build()
     private val gson = Gson()
 
-    fun login(baseUrl: String, username: String, password: String): Boolean {
+    fun fetchLiveCategories(baseUrl: String, username: String, password: String): List<XtreamCategory> {
+        val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
+        val url = "$safeBaseUrl/player_api.php?username=$username&password=$password&action=get_live_categories"
+
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
         return try {
-            val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
-            val url = "$safeBaseUrl/player_api.php?username=$username&password=$password"
-            Log.d("XtreamFetcher", "Testing login: $url")
-            val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    Log.e("XtreamFetcher", "Login failed with code: ${response.code}")
-                    return false
-                }
+                if (!response.isSuccessful) return emptyList()
                 val json = response.body.string()
-                Log.d("XtreamFetcher", "Login response: $json")
-                // Success usually contains "auth": 1
-                json.contains("\"auth\":1") || json.contains("\"auth\": 1")
+                val type = object : TypeToken<List<XtreamCategory>>() {}.type
+                gson.fromJson(json, type) ?: emptyList()
             }
         } catch (e: Exception) {
-            Log.e("XtreamFetcher", "Login exception", e)
-            false
+            emptyList()
+        }
+    }
+
+    fun fetchVodCategories(baseUrl: String, username: String, password: String): List<XtreamCategory> {
+        val safeBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
+        val url = "$safeBaseUrl/player_api.php?username=$username&password=$password&action=get_vod_categories"
+
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return emptyList()
+                val json = response.body.string()
+                val type = object : TypeToken<List<XtreamCategory>>() {}.type
+                gson.fromJson(json, type) ?: emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 
